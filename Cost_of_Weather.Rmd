@@ -1,0 +1,138 @@
+# Cost of Weather
+
+---
+
+
+## Synopsis   
+
+---
+
+
+ This analysis uses NOAA storm [data]() to examine the impact of severe weather events across the U.S. It answers two questions:
+* which event types are most harmful to population health
+* which cause the most economic damage.
+The dataset contains a wide range of variables, but this analysis focuses on a subset **event type** **fatalities**, **injuries**, **property** and **crop** damages. Health impacts were ranked by total fatalities and injuries. Economic damage was calculated by adjusting property and crop losses using exponent codes. Tornadoes were the leading cause of death and injury. Floods and hurricanes caused the highest financial losses. Data was cleaned and grouped by event type to support the analysis, following a specific [clustering process]()."
+
+## Data Processing
+
+---
+
+
+ To optimize performance and conserve resources, I read only the columns relevant to the analysis from the original dataset, which contains 37 columns.
+```{r data_processing, message=FALSE}
+library(dplyr)
+suppressWarnings(library(janitor)) 
+library(ggplot2)
+library(data.table)
+data<- fread("repdata_data_StormData.csv", 
+             select = c("EVTYPE","FATALITIES","INJURIES",
+                "PROPDMG","PROPDMGEXP","CROPDMG","CROPDMGEXP"))
+data <- clean_names(data)
+```
+
+ I decided to cluster the names of weather events, as the original dataset contained misspellings, duplicate labels, and coded entries. The rationale and steps leading up to the clustering process are documented in the following R Markdown [file.]()
+
+```{r clustering process}
+evtype_trans <-  function(x) {
+        if (grepl("cold|cool|freez|fros|blizz|chil|snow|ice|icy|winter|wintry",
+                  x,ignore.case = TRUE)) {return("cold")}
+        else if (grepl("tornad|torndao", x, ignore.case = TRUE))
+        {return("tornado")}       
+        else if (grepl("heat|warm|hot", x, ignore.case = TRUE))
+        {return("heat")}        
+        else if (grepl("flood|surf", x, ignore.case = TRUE))
+        {return("flooding")}        
+        else if (grepl("hail", x, ignore.case = TRUE))
+        {return("hail")}        
+        else if (grepl("wind", x, ignore.case = TRUE))
+        {return("wind")}        
+        else if (grepl("thunderstor|storm", x, ignore.case = TRUE))
+        {return("storm")}
+        else if (grepl("rain", x, ignore.case = TRUE))
+        {return("rain")}
+        else if (grepl("waterspout|wayterspout|water spout",
+                       x,ignore.case = TRUE))
+        {return("waterspout")}       
+        else if (grepl("hurricane", x, ignore.case = TRUE))
+        {return("hurricane")}       
+        else if (grepl("lightning|lighting|ligntning|lightning",
+                       x, ignore.case = TRUE))
+        {return("lightning")}       
+        else if (grepl("volcan", x, ignore.case = TRUE))
+        {return("volcano")}       
+        else if (grepl("dry|drought", x, ignore.case = TRUE))
+        {return("drought")}       
+        else if (grepl("rip current", x, ignore.case = TRUE))
+        {return("rip current")}       
+        else {return(x)}
+}
+```
+## Core Processing
+
+---
+
+
+```{r casualties analysis}
+casualties <- data %>%
+        select(evtype,fatalities,injuries)
+casualties$evtype<- sapply(casualties$evtype, evtype_trans)
+casualties_clustered<- casualties %>%
+        group_by(evtype) %>%
+        summarise(total_fatalities= sum(fatalities, na.rm =TRUE),
+                  total_injuries = sum(injuries , na.rm =TRUE)) %>%
+        arrange(desc(total_fatalities))
+```
+
+```{r costs analysis}
+costs<- data %>%
+        select(evtype,propdmg,propdmgexp,cropdmg,cropdmgexp)
+costs$propdmgexp<-as.character(tolower(costs$propdmgexp))
+costs$cropdmgexp<-as.character(tolower(costs$cropdmgexp))
+lookup <- c(h = 100, k = 1000, m = 1e6, b = 1e9)
+damage_calculator <- function(dmg,exp){
+        multiplier <- ifelse(exp %in% names(lookup),
+                             lookup[exp], 1)
+        return(dmg * multiplier)
+}    
+costs$evtype<- sapply(costs$evtype, evtype_trans)
+costs <- costs %>%
+        mutate(prop_cost =
+                      mapply(damage_calculator,propdmg,propdmgexp),
+               crop_cost = 
+                      mapply(damage_calculator,cropdmg,cropdmgexp),
+               total_cost = prop_cost + crop_cost)
+costs_clustered<-costs %>%
+        group_by(evtype) %>%
+        summarise(total_cost = sum(total_cost, na.rm=TRUE),
+                  prop_cost = sum(prop_cost, na.rm = TRUE),
+                  crop_cost = sum(crop_cost, na.rm = TRUE)) %>%
+        arrange(desc(total_cost))
+```
+
+## Results
+
+---
+
+
+ The following two plots present the impact of weather events in terms of human casualties and economic cost. Tornadoes stand out as the most devastating for human life, followed by extreme heat. In contrast, flooding causes the greatest financial damage. Interestingly, extreme heat, despite its severe toll on human health, has minimal economic consequences. On the other hand, hurricanes result in substantial financial losses but have relatively low impact on human casualties.
+```{r results}
+ggplot(head(casualties_clustered,8),aes(
+        x=reorder(evtype,total_fatalities),y=total_fatalities))+
+        geom_bar(stat = "identity", fill = "darkred") +
+        labs(title = "Top 8 Event Types by Fatalities",
+             x = "Event Type",
+             y = "Total Fatalities")+
+        theme_minimal()
+        
+ggplot(head(costs_clustered, 8), aes(
+  x = reorder(evtype, total_cost),
+  y = total_cost)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(title = "Top 8 Event Types by Economic Cost",
+       x = "Event Type",
+       y = "Total Cost (USD)") +
+  theme_minimal()
+```
+
+### Thank you for reviewing this analysis.
+ *Apostolos Karyofyllis*
