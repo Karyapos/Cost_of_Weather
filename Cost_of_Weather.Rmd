@@ -8,7 +8,7 @@
 ---
 
 
- This analysis uses NOAA storm [data]() to examine the impact of severe weather events across the U.S. It answers two questions:
+ This analysis uses NOAA storm [data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2) to examine the impact of severe weather events across the U.S. It answers two questions:
 * which event types are most harmful to population health
 * which cause the most economic damage.
 The dataset contains a wide range of variables, but this analysis focuses on a subset **event type** **fatalities**, **injuries**, **property** and **crop** damages. Health impacts were ranked by total fatalities and injuries. Economic damage was calculated by adjusting property and crop losses using exponent codes. Tornadoes were the leading cause of death and injury. Floods and hurricanes caused the highest financial losses. Data was cleaned and grouped by event type to support the analysis, following a specific [clustering process]()."
@@ -30,7 +30,7 @@ data<- fread("repdata_data_StormData.csv",
 data <- clean_names(data)
 ```
 
- I decided to cluster the names of weather events, as the original dataset contained misspellings, duplicate labels, and coded entries. The rationale and steps leading up to the clustering process are documented in the following R Markdown [file.]()
+ I decided to cluster the names of weather events, as the original dataset contained misspellings, duplicate labels, and coded entries. The rationale and steps leading up to the clustering process are documented in the following R Markdown [file.](https://github.com/Karyapos/Cost_of_Weather/blob/main/Clustering_proccess.Rmd)
 
 ```{r clustering process}
 evtype_trans <-  function(x) {
@@ -135,4 +135,5 @@ ggplot(head(costs_clustered, 8), aes(
 ```
 
 ### Thank you for reviewing this analysis.
+
  *Apostolos Karyofyllis*
