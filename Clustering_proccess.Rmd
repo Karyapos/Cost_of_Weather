@@ -6,11 +6,11 @@
 
 ---
 
-In this file I explain the clustering strategy I used in the project of The [Cost of Weather]() for cleaning the messy data provided. The goal is to group similar disaster types under unified labels so the analysis becomes meaningful.
+In this file I explain the clustering strategy I used in the project of The [Cost of Weather](https://github.com/Karyapos/Cost_of_Weather) for cleaning the messy data provided. The goal is to group similar disaster types under unified labels so the analysis becomes meaningful.
 
 ```{r , message=FALSE }
 library(dplyr)
-library(janitor)
+suppressWarnings(library(janitor)) 
 data <- read.csv("repdata_data_StormData.csv")
 data <- clean_names(data)
 ```
@@ -36,9 +36,9 @@ This first table shows the top 20 events by total fatalities. While informative,
 
 ---
 
-To reduce noise and improve clarity, I created a clustering function that groups the most severe and frequent event types into broader categories. This first version includes 7 main clusters and an “other” group for everything else. The full code is available in [code_stage2]().
+To reduce noise and improve clarity, I created a clustering function that groups the most severe and frequent event types into broader categories. This first version includes 7 main clusters and an “other” group for everything else.
 
-```{r stage2, echo=FALSE}
+```{r stage2 }
 evtype_trans2_other <-  function(x) {
         if (grepl("cold|cool|freez|fros|blizz|chil|snow|ice|icy",
                     x,ignore.case = TRUE)) {return("cold")}
@@ -65,9 +65,7 @@ casualties<- casualties %>%
         total_fatalities = sum(total_fatalities,na.rm = TRUE),
         total_injuries = sum(total_injuries,na.rm = TRUE)) %>%
         arrange(desc(total_fatalities))
-```
 
-```{r}
 head(casualties,20)
 ```
 
@@ -77,40 +75,38 @@ This clustering helped simplify the data, but the “other” category still con
 
 ---
 
-In this final clustering pass, I expanded the logic to include more specific disaster types — such as hurricanes, lightnings , rip currents, and volcanoes. This helped isolate high-impact events that were previously buried in the “other” group. You can find the full code in [code_stage3]() .
+In this final clustering pass, I expanded the logic to include more specific disaster types — such as hurricanes, lightnings , rip currents, and volcanoes. This helped isolate high-impact events that were previously buried in the “other” group.
 
 ```{r stage3, echo=FALSE}
-evtype_trans3 <-  function(x) {
-        if (grepl("cold|cool|freez|fros|blizz|chil|snow|ice|icy",
+evtype_trans <-  function(x) {
+        if (grepl("cold|cool|freez|fros|blizz|chil|snow|ice|icy|winter|wintry",
                   x,ignore.case = TRUE)) {return("cold")}
         else if (grepl("tornad|torndao", x, ignore.case = TRUE))
         {return("tornado")}       
         else if (grepl("heat|warm|hot", x, ignore.case = TRUE))
         {return("heat")}        
         else if (grepl("flood|surf", x, ignore.case = TRUE))
-        {return("flood")}        
+        {return("flooding")}        
         else if (grepl("hail", x, ignore.case = TRUE))
         {return("hail")}        
         else if (grepl("wind", x, ignore.case = TRUE))
         {return("wind")}        
         else if (grepl("thunderstor|storm", x, ignore.case = TRUE))
-        {return("thunderstorm wind")}
+        {return("storm")}
         else if (grepl("rain", x, ignore.case = TRUE))
         {return("rain")}
-        else if (grepl("waterspout|wayterspout|water spout", x,
-                ignore.case = TRUE))
+        else if (grepl("waterspout|wayterspout|water spout",
+                       x,ignore.case = TRUE))
         {return("waterspout")}       
         else if (grepl("hurricane", x, ignore.case = TRUE))
         {return("hurricane")}       
-        else if (grepl("lightning|lighting|ligntning|lightning", x,
-                 ignore.case = TRUE))
+        else if (grepl("lightning|lighting|ligntning",
+                       x, ignore.case = TRUE))
         {return("lightning")}       
         else if (grepl("volcan", x, ignore.case = TRUE))
         {return("volcano")}       
-        else if (grepl("dry", x, ignore.case = TRUE))
-        {return("dry")}       
-        else if (grepl("winter|wintry", x, ignore.case = TRUE))
-        {return("winter")}       
+        else if (grepl("dry|drought", x, ignore.case = TRUE))
+        {return("drought")}       
         else if (grepl("rip current", x, ignore.case = TRUE))
         {return("rip current")}       
         else {return(x)}
@@ -120,16 +116,14 @@ casualties<- data %>%
         summarise(total_fatalities = sum(fatalities, na.rm = TRUE),
                   total_injuries = sum(injuries, na.rm = TRUE)) %>%
         arrange(desc(total_fatalities))
-casualties$evtype<- sapply(casualties$evtype,evtype_trans3)
+casualties$evtype<- sapply(casualties$evtype,evtype_trans)
 casualties<- casualties %>%
         group_by(evtype) %>%
         summarise(
         total_fatalities = sum(total_fatalities,na.rm = TRUE),
         total_injuries = sum(total_injuries,na.rm = TRUE)) %>%
         arrange(desc(total_fatalities))
-```
 
-```{r}
 head(casualties,20)
 ```
 
@@ -141,49 +135,47 @@ The results now show a clearer picture. Most major disaster types are correctly 
 
 If you want to see which original event names were grouped into each cluster, you can use the clusters mapping. Below is an example showing the first 20 entries from the “wind” cluster. You can modify the code to explore other clusters.
 
-```{r, echo=FALSE}
-evtype_trans3 <-  function(x) {
-        if (grepl("cold|cool|freez|fros|blizz|chil|snow|ice|icy",
+```{r clusters_overview}
+evtype_trans <-  function(x) {
+        if (grepl("cold|cool|freez|fros|blizz|chil|snow|ice|icy|winter|wintry",
                   x,ignore.case = TRUE)) {return("cold")}
         else if (grepl("tornad|torndao", x, ignore.case = TRUE))
         {return("tornado")}       
         else if (grepl("heat|warm|hot", x, ignore.case = TRUE))
         {return("heat")}        
         else if (grepl("flood|surf", x, ignore.case = TRUE))
-        {return("flood")}        
+        {return("flooding")}        
         else if (grepl("hail", x, ignore.case = TRUE))
         {return("hail")}        
         else if (grepl("wind", x, ignore.case = TRUE))
         {return("wind")}        
         else if (grepl("thunderstor|storm", x, ignore.case = TRUE))
-        {return("thunderstorm wind")}
+        {return("storm")}
         else if (grepl("rain", x, ignore.case = TRUE))
         {return("rain")}
-        else if (grepl("waterspout|wayterspout|water spout", x, ignore.case = TRUE))
+        else if (grepl("waterspout|wayterspout|water spout",
+                       x,ignore.case = TRUE))
         {return("waterspout")}       
         else if (grepl("hurricane", x, ignore.case = TRUE))
         {return("hurricane")}       
-        else if (grepl("lightning|lighting|ligntning|lightning", x, ignore.case = TRUE))
+        else if (grepl("lightning|lighting|ligntning|lightning",
+                       x, ignore.case = TRUE))
         {return("lightning")}       
         else if (grepl("volcan", x, ignore.case = TRUE))
         {return("volcano")}       
-        else if (grepl("dry", x, ignore.case = TRUE))
-        {return("dry")}       
-        else if (grepl("winter|wintry", x, ignore.case = TRUE))
-        {return("winter")}       
+        else if (grepl("dry|drought", x, ignore.case = TRUE))
+        {return("drought")}       
         else if (grepl("rip current", x, ignore.case = TRUE))
         {return("rip current")}       
         else {return(x)}
-        
 }
 clusters_id<-data.frame(original_name = unique(data$evtype),
-                        cluster = sapply(unique(data$evtype),evtype_trans3) ,row.names = NULL)
-```
+                        cluster = sapply(unique(data$evtype),evtype_trans) ,row.names = NULL)
 
-```{r}
 head(clusters_id[clusters_id$cluster == "wind", ],20)
 ```
 
 
 ### Thank you for reviewing this analysis.
+
  *Apostolos Karyofyllis*
