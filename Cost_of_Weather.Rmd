@@ -11,7 +11,7 @@
  This analysis uses NOAA storm [data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2) to examine the impact of severe weather events across the U.S. It answers two questions:
 * which event types are most harmful to population health
 * which cause the most economic damage.
-The dataset contains a wide range of variables, but this analysis focuses on a subset **event type** **fatalities**, **injuries**, **property** and **crop** damages. Health impacts were ranked by total fatalities and injuries. Economic damage was calculated by adjusting property and crop losses using exponent codes. Tornadoes were the leading cause of death and injury. Floods and hurricanes caused the highest financial losses. Data was cleaned and grouped by event type to support the analysis, following a specific [clustering process]()."
+The dataset contains a wide range of variables, but this analysis focuses on a subset **event type** **fatalities**, **injuries**, **property** and **crop** damages. Health impacts were ranked by total fatalities and injuries. Economic damage was calculated by adjusting property and crop losses using exponent codes. Tornadoes were the leading cause of death and injury. Floods and hurricanes caused the highest financial losses. Data was cleaned and grouped by event type to support the analysis, following a specific [clustering process](https://github.com/Karyapos/Cost_of_Weather/blob/main/Clustering_proccess.Rmd)."
 
 ## Data Processing
 
@@ -55,7 +55,7 @@ evtype_trans <-  function(x) {
         {return("waterspout")}       
         else if (grepl("hurricane", x, ignore.case = TRUE))
         {return("hurricane")}       
-        else if (grepl("lightning|lighting|ligntning|lightning",
+        else if (grepl("lightning|lighting|ligntning",
                        x, ignore.case = TRUE))
         {return("lightning")}       
         else if (grepl("volcan", x, ignore.case = TRUE))
@@ -79,15 +79,15 @@ casualties$evtype<- sapply(casualties$evtype, evtype_trans)
 casualties_clustered<- casualties %>%
         group_by(evtype) %>%
         summarise(total_fatalities= sum(fatalities, na.rm =TRUE),
-                  total_injuries = sum(injuries , na.rm =TRUE)) %>%
+                  total_injuries = sum(injuries, na.rm =TRUE)) %>%
         arrange(desc(total_fatalities))
 ```
 
 ```{r costs analysis}
 costs<- data %>%
         select(evtype,propdmg,propdmgexp,cropdmg,cropdmgexp)
-costs$propdmgexp<-as.character(tolower(costs$propdmgexp))
-costs$cropdmgexp<-as.character(tolower(costs$cropdmgexp))
+costs$propdmgexp<-tolower(as.character(costs$propdmgexp))
+costs$cropdmgexp<-tolower(as.character(costs$cropdmgexp))
 lookup <- c(h = 100, k = 1000, m = 1e6, b = 1e9)
 damage_calculator <- function(dmg,exp){
         multiplier <- ifelse(exp %in% names(lookup),
@@ -137,3 +137,4 @@ ggplot(head(costs_clustered, 8), aes(
 ### Thank you for reviewing this analysis.
 
  *Apostolos Karyofyllis*
+
